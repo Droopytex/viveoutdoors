@@ -19,7 +19,7 @@ describe("API Endpoints", () => {
     console.log("Server successfully closed");
   });
 
-  /*describe("POST /registro", () => {
+describe("POST /registro", () => {
     it("debería registrar un nuevo usuario", async () => {
       const response = await request(server).post("/registro").send({
         nombre: "Juan",
@@ -72,7 +72,7 @@ describe("API Endpoints", () => {
     });
   });
 
-  /*describe("POST /logout", () => {
+describe("POST /logout", () => {
     it("debería cerrar sesión", async () => {
       const response = await request(server)
         .post("/logout")
@@ -83,9 +83,9 @@ describe("API Endpoints", () => {
         "Sesión cerrada exitosamente"
       );
     });
-  });*/
+  });
 
-  describe("GET /publicaciones", () => {
+ describe("GET /publicaciones", () => {
     it("debería obtener publicaciones", async () => {
       const response = await request(server).get("/publicaciones").send();
       console.log(response, "este es el response");
@@ -93,8 +93,7 @@ describe("API Endpoints", () => {
       expect(response.body).toHaveProperty("obtenerPublicaciones");
     });
   });
-
-  /*describe("POST /crearpublicacion", () => {
+describe("POST /crearpublicacion", () => {
     it("debería crear una nueva publicación", async () => {
       const response = await request(server).post("/crearpublicacion").send({
         nombre: "Producto Test",
@@ -112,5 +111,5 @@ describe("API Endpoints", () => {
         "Publicación creada exitosamente"
       );
     });
-  });*/
+  });
 });

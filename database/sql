@@ -1,0 +1,268 @@
+
+
+CREATE DATABASE viveoutdoors;
+
+\c viveoutdoors;
+
+-- Creación de tablas
+CREATE TABLE usuarios ( 
+    id_usuario SERIAL PRIMARY KEY, 
+    nombre VARCHAR(50) NOT NULL, 
+    apellido VARCHAR(50) NOT NULL, 
+    email VARCHAR(100) UNIQUE NOT NULL, 
+    telefono VARCHAR(15) UNIQUE NOT NULL, 
+    password VARCHAR(60) NOT NULL,  -- Aumentado el tamaño para almacenar hashes de contraseñas
+    rol VARCHAR(7) CHECK (rol IN ('admin', 'cliente')) DEFAULT 'cliente' 
+);
+
+CREATE TABLE direcciones ( 
+    id_direccion SERIAL PRIMARY KEY, 
+    id_usuario INT NOT NULL, 
+    direccion VARCHAR(255) NOT NULL, 
+    ciudad VARCHAR(100) NOT NULL, 
+    region VARCHAR(100) NOT NULL, 
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+);
+
+CREATE TABLE categorias ( 
+    id_categoria SERIAL PRIMARY KEY, 
+    nombre VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE productos ( 
+    id_producto SERIAL PRIMARY KEY, 
+    nombre VARCHAR(100) NOT NULL, 
+    descripcion TEXT, 
+    stock INT NOT NULL, 
+    precio INT NOT NULL
+);
+
+CREATE TABLE productos_categorias ( 
+    id_producto INT NOT NULL, 
+    id_categoria INT NOT NULL, 
+    PRIMARY KEY (id_producto, id_categoria), 
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE, 
+    FOREIGN KEY (id_categoria) REFERENCES categorias(id_categoria) ON DELETE CASCADE
+);
+
+CREATE TABLE productos_sale ( 
+    id_producto INT NOT NULL, 
+    descuento INT NOT NULL, 
+    estado VARCHAR(8) CHECK (estado IN ('activo', 'inactivo')) NOT NULL DEFAULT 'inactivo', 
+    PRIMARY KEY (id_producto), 
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE 
+);
+
+CREATE TABLE imagenes_productos ( 
+    id_imagen SERIAL PRIMARY KEY, 
+    id_producto INT NOT NULL, 
+    url VARCHAR(255) NOT NULL, 
+    texto_alternativo VARCHAR(255) NOT NULL, 
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE 
+);
+
+CREATE TABLE pedidos ( 
+    id_pedido SERIAL PRIMARY KEY, 
+    id_usuario INT NOT NULL, 
+    fecha_pedido TIMESTAMP NOT NULL, 
+    estado VARCHAR(10) CHECK (estado IN ('pendiente', 'enviado', 'completado', 'cancelado')) DEFAULT 'pendiente', 
+    total INT NOT NULL, 
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE 
+); 
+
+CREATE TABLE detallesPedido ( 
+    id_detalle SERIAL PRIMARY KEY, 
+    id_pedido INT NOT NULL, 
+    id_producto INT NOT NULL, 
+    cantidad INT NOT NULL, 
+    precio INT NOT NULL, 
+    FOREIGN KEY (id_pedido) REFERENCES pedidos(id_pedido) ON DELETE CASCADE, 
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE 
+); 
+
+CREATE TABLE carrito ( 
+    id_carrito SERIAL PRIMARY KEY, 
+    id_usuario INT NOT NULL, 
+    fecha_creacion TIMESTAMP NOT NULL, 
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE 
+); 
+
+CREATE TABLE detallesCarrito ( 
+    id_detalle_carrito SERIAL PRIMARY KEY, 
+    id_carrito INT NOT NULL, 
+    id_producto INT NOT NULL, 
+    cantidad INT NOT NULL, 
+    precio INT NOT NULL, 
+    FOREIGN KEY (id_carrito) REFERENCES carrito(id_carrito) ON DELETE CASCADE, 
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE 
+);
+
+CREATE TABLE publicaciones ( 
+    id_publicacion SERIAL PRIMARY KEY, 
+    id_producto INT NOT NULL, 
+    id_usuario INT NOT NULL, 
+    estado VARCHAR(8) CHECK (estado IN ('activo', 'inactivo')) DEFAULT 'inactivo', 
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE, 
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+);
+
+-- INSERTAR REGISTROS EN LAS TABLAS -----------------------------------------------------
+
+-- Tabla Usuarios: 2 admin y 1 cliente
+INSERT INTO usuarios (nombre, apellido, email, telefono, password, rol) VALUES 
+('juan', 'perez', 'admin1@example.com', '1234567890', '$2a$10$brMjQTyiKsRz3gPyZdjJsepKn2hF4Es70FoFg36DbxGHN7ZzogUr6', 'admin'),
+('ana', 'gomez', 'admin2@example.com', '0987654321', '$2a$10$brMjQTyiKsRz3gPyZdjJsepKn2hF4Es70FoFg36DbxGHN7ZzogUr6', 'admin'),
+('maria', 'lopez', 'cliente1@example.com', '1122334455', '$2a$10$brMjQTyiKsRz3gPyZdjJsepKn2hF4Es70FoFg36DbxGHN7ZzogUr6', 'cliente');
+
+-- Tabla direcciones: 2 registros para el cliente y 1 para cada admin
+INSERT INTO direcciones (id_usuario, direccion, ciudad, region) VALUES 
+(1, 'Calle Admin1', 'Santiago', 'Metropolitana'),
+(2, 'Calle Admin2', 'Santiago', 'Metropolitana'),
+(3, 'Calle 123', 'Santiago', 'Metropolitana'),
+(3, 'Avenida 456', 'Casablanca', 'Valparaíso');
+
+-- Tabla categorías: 4 categorías
+INSERT INTO categorias (nombre) VALUES 
+('Carpas'), 
+('Mochilas'), 
+('Sacos & Colchonetas'), 
+('Accesorios'); 
+
+-- Tabla productos: 2 productos para cada categoría
+-- Productos para categoría 'Carpas'
+INSERT INTO productos (nombre, descripcion, stock, precio) VALUES 
+('Carpa Everest', 'Carpa de alta montaña', 10, 200000),
+('Carpa Igloo', 'Carpa para 4 personas', 15, 120000);
+
+-- Productos para categoría 'Mochilas'
+INSERT INTO productos (nombre, descripcion, stock, precio) VALUES 
+('Mochila Montañista', 'Mochila de 70 litros', 20, 40000),
+('Mochila Trekking', 'Mochila ligera de 30 litros', 30, 30000);
+
+-- Productos para categoría 'Sacos & Colchonetas'
+INSERT INTO productos (nombre, descripcion, stock, precio) VALUES 
+('Saco de Dormir Invierno', 'Saco térmico para bajas temperaturas', 25, 60000),
+('Colchoneta Autoinflable', 'Colchoneta para camping', 20, 30000);
+
+-- Productos para categoría 'Accesorios'
+INSERT INTO productos (nombre, descripcion, stock, precio) VALUES 
+('Linterna LED', 'Linterna resistente al agua', 50, 15000),
+('Filtro de Agua Portátil', 'Filtro compacto para purificar agua', 40, 25000);
+
+-- Tabla productos_categorias
+-- Relaciones para 'Carpas'
+INSERT INTO productos_categorias (id_producto, id_categoria) VALUES 
+(1, 1),
+(2, 1);
+
+-- Relaciones para 'Mochilas'
+INSERT INTO productos_categorias (id_producto, id_categoria) VALUES 
+(3, 2),
+(4, 2);
+
+-- Relaciones para 'Sacos & Colchonetas'
+INSERT INTO productos_categorias (id_producto, id_categoria) VALUES 
+(5, 3),
+(6, 3);
+
+-- Relaciones para 'Accesorios'
+INSERT INTO productos_categorias (id_producto, id_categoria) VALUES 
+(7, 4),
+(8, 4);
+
+-- Tabla productos_sale: 3 productos con descuento
+INSERT INTO productos_sale (id_producto, descuento, estado) VALUES 
+(1, 20, 'activo'),  -- Carpa Everest con 20% de descuento
+(2, 0, 'inactivo'), 
+(3, 0, 'inactivo'), 
+(4, 5, 'activo'),  -- Mochila Trekking con 5% de descuento
+(5, 0, 'inactivo'), 
+(6, 0, 'inactivo'), 
+(7, 0, 'inactivo'), 
+(8, 15, 'activo');  -- Filtro de Agua Portátil con 15% de descuento
+
+-- Tabla imagenes_productos
+-- Imágenes para productos en la categoría 'Carpas'
+INSERT INTO imagenes_productos (id_producto, url, texto_alternativo) VALUES
+(1, 'https://m.media-amazon.com/images/I/61zzlUv-4eL._AC_SL1500_.jpg', 'Imagen de Carpa Everest - Cerrada'),
+(1, 'https://m.media-amazon.com/images/I/610X8VJrcHL._AC_SX679_.jpg', 'Imagen de Carpa Everest - Abierta'),
+(1, 'https://m.media-amazon.com/images/I/61P9b+4pBPL._AC_SL1500_.jpg', 'Imagen de Carpa Everest - Detalle'),
+(2, 'https://m.media-amazon.com/images/I/61+B+9TQYhL._AC_SX679_.jpg', 'Imagen de Carpa Igloo - Dos modos'),
+(2, 'https://m.media-amazon.com/images/I/81WZ7dYqGuL._AC_SL1500_.jpg', 'Imagen de Carpa Igloo - Doble Capa'),
+(2, 'https://m.media-amazon.com/images/I/81ATXZXt57L._AC_SL1500_.jpg', 'Imagen de Carpa Igloo - Cerrada');
+
+-- Imágenes para productos en la categoría 'Mochilas'
+INSERT INTO imagenes_productos (id_producto, url, texto_alternativo) VALUES
+(3, 'https://m.media-amazon.com/images/I/61lYcYQnRBL._AC_SL1000_.jpg', 'Imagen de Mochila Montañista - Frente'),
+(3, 'https://m.media-amazon.com/images/I/71-dfOPWIXL._AC_SL1000_.jpg', 'Imagen de Mochila Montañista - Atrás'),
+(3, 'https://m.media-amazon.com/images/I/71bVBa+a5cL._AC_SL1000_.jpg', 'Imagen de Mochila Montañista - Características'),
+(4, 'https://m.media-amazon.com/images/I/81siwI2UxEL._AC_SX679_.jpg', 'Imagen de Mochila Trekking - Frente'),
+(4, 'https://m.media-amazon.com/images/I/816L9Vop0BL._AC_SL1500_.jpg', 'Imagen de Mochila Trekking - Atrás'),
+(4, 'https://m.media-amazon.com/images/I/71QUucsiLdL._AC_SL1500_.jpg', 'Imagen de Mochila Trekking - Características');
+
+-- Imágenes para productos en la categoría 'Sacos & Colchonetas'
+INSERT INTO imagenes_productos (id_producto, url, texto_alternativo) VALUES
+(5, 'https://m.media-amazon.com/images/I/51QlEPuyJuL._AC_SL1100_.jpg', 'Imagen de Saco de Dormir'),
+(5, 'https://m.media-amazon.com/images/I/61c+KuSoyjL._AC_SL1000_.jpg', 'Imagen de Saco de Dormir - Abierto'),
+(6, 'https://m.media-amazon.com/images/I/710FSXg104L._AC_SL1500_.jpg', 'Imagen de Colchoneta'),
+(6, 'https://m.media-amazon.com/images/I/71-WRK2UgUL._AC_SL1500_.jpg', 'Imagen de Colchoneta - Características');
+
+-- Imágenes para productos en la categoría 'Accesorios'
+INSERT INTO imagenes_productos (id_producto, url, texto_alternativo) VALUES
+(7, 'https://m.media-amazon.com/images/I/81HsUrL1r3L._AC_SL1500_.jpg', 'Imagen de Linterna LED'),
+(7, 'https://m.media-amazon.com/images/I/61+oUcG7nKL._AC_SL1000_.jpg', 'Imagen de Linterna LED - Características'),
+(7, 'https://m.media-amazon.com/images/I/911vrRoQxZL._AC_SL1500_.jpg', 'Imagen de Linterna LED - Características'),
+(8, 'https://m.media-amazon.com/images/I/61LxBlQKmkL._SL1500_.jpg', 'Imagen de Filtro de Agua Portátil'),
+(8, 'https://m.media-amazon.com/images/I/610SxQjvBvL._SL1500_.jpg', 'Imagen de Filtro de Agua Portátil'),
+(8, 'https://m.media-amazon.com/images/I/81eKsz+YVyL._SL1500_.jpg', 'Imagen de Filtro de Agua Portátil');
+
+-- Tabla Pedidos: 1 usuario, dos pedidos
+INSERT INTO pedidos (id_usuario, fecha_pedido, estado, total) VALUES 
+(3, '2024-11-10 10:30:00', 'pendiente', 240000),
+(3, '2024-11-11 15:45:00', 'pendiente', 135000);
+
+-- Tabla Detalles del pedido
+-- Detalles del Pedido 1
+INSERT INTO detallesPedido (id_pedido, id_producto, cantidad, precio) VALUES
+(1, 1, 1, 200000),  -- Carpa Everest, 1 unidad, 200000 cada una
+(1, 3, 1, 40000);   -- Mochila Montañista, 1 unidad, 40000 cada una
+
+-- Detalles del Pedido 2
+INSERT INTO detallesPedido (id_pedido, id_producto, cantidad, precio) VALUES
+(2, 2, 1, 120000),  -- Carpa Igloo, 1 unidad, 120000 cada una
+(2, 7, 1, 15000);   -- Linterna Led, 1 unidad, 15000 cada una
+
+-- Tabla Carrito
+-- Carrito para el usuario maria (id 3)
+INSERT INTO carrito (id_usuario, fecha_creacion) VALUES (3, '2024-11-10 09:00:00');
+
+-- Tabla Detalle Carrito
+-- Detalles del carrito para el carrito del usuario 3
+INSERT INTO detallesCarrito (id_carrito, id_producto, cantidad, precio) VALUES
+(1, 1, 1, 200000),  -- Carpa Everest, 1 unidad, 200000 cada una
+(1, 3, 1, 40000);   -- Mochila Montañista, 1 unidad, 40000 cada una
+
+-- Tabla de Publicaciones
+-- Publicaciones para productos en la categoría 'Carpas'
+INSERT INTO publicaciones (id_producto, id_usuario, estado, fecha_creacion, fecha_actualizacion) VALUES
+(1, 1, 'activo', '2024-11-10 10:00:00', '2024-11-10 10:00:00'),
+(2, 1, 'activo', '2024-11-10 11:00:00', '2024-11-10 11:00:00');
+
+-- Publicaciones para productos en la categoría 'Mochilas'
+INSERT INTO publicaciones (id_producto, id_usuario, estado, fecha_creacion, fecha_actualizacion) VALUES
+(3, 2, 'activo', '2024-11-11 10:00:00', '2024-11-11 10:00:00'),
+(4, 2, 'activo', '2024-11-11 11:00:00', '2024-11-11 11:00:00');
+
+-- Publicaciones para productos en la categoría 'Sacos & Colchonetas'
+INSERT INTO publicaciones (id_producto, id_usuario, estado, fecha_creacion, fecha_actualizacion) VALUES
+(5, 1, 'activo', '2024-11-12 10:00:00', '2024-11-12 10:00:00'),
+(6, 1, 'activo', '2024-11-12 11:00:00', '2024-11-12 11:00:00');
+
+-- Publicaciones para productos en la categoría 'Accesorios'
+INSERT INTO publicaciones (id_producto, id_usuario, estado, fecha_creacion, fecha_actualizacion) VALUES
+(7, 2, 'activo', '2024-11-13 10:00:00', '2024-11-13 10:00:00'),
+(8, 2, 'activo', '2024-11-13 11:00:00', '2024-11-13 11:00:00');
+```
+
